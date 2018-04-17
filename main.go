@@ -37,7 +37,7 @@ func main() {
 			//fmt.Println("[res]",res.MessageID)
 		}
 		if update.Body == "00" {
-			mapStores := dbwork.SelectStors()
+			mapStores := dbwork.SelectStores()
 			var catalog string
 			i := 1
 			for _, store := range mapStores {

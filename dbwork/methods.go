@@ -34,7 +34,7 @@ func SelectAllUsers() map[int]StateUser{
 	}
 	return mapList
 }
-func SelectStors() map[int]Store{
+func SelectStores() map[int]Store{
 	db := dbConnect()
 	defer db.Close()
 
