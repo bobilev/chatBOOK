@@ -1,7 +1,6 @@
 package dbwork
 
 import (
-	"strconv"
 	"log"
 	"fmt"
 )
@@ -17,12 +16,13 @@ func SelectAllUsers() map[int]StateUser{
 	for res.Next() {
 		var userid int
 		var laststep string
-		var laststore string
+		var laststore int
 		var stateuserid StateUser
 
 		err = res.Scan(&userid,&laststep,&laststore)
 		checkErr(err)
-		stateuserid.LastStore , _ = strconv.Atoi(laststore)
+
+		stateuserid.LastStore = laststore
 		stateuserid.LastStep = laststep
 
 		mapList[userid] = stateuserid
@@ -31,6 +31,35 @@ func SelectAllUsers() map[int]StateUser{
 		fmt.Println("userid -",userid)
 		fmt.Println("laststep -",laststep)
 		fmt.Println("laststore -",laststore)
+	}
+	return mapList
+}
+func SelectStors() map[int]Store{
+	db := dbConnect()
+	defer db.Close()
+
+	mapList := make(map[int]Store)
+
+	res, err := db.Query("SELECT * FROM stores ")
+	checkErr(err)
+	for res.Next() {
+		var storeid int
+		var text string
+		var media int
+
+		var Store Store
+		err = res.Scan(&storeid,&text,&media)
+		checkErr(err)
+
+		Store.Media = media
+		Store.Text = text
+
+		mapList[storeid] = Store
+
+
+		fmt.Println("storeid -",storeid)
+		fmt.Println("text -",text)
+		fmt.Println("media -",media)
 	}
 	return mapList
 }
