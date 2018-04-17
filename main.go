@@ -1,36 +1,40 @@
 package main
 
 import (
-	"log"
-	"github.com/Dimonchik0036/vk-api"
+	"github.com/bobilev/golang-chat-bot-vk"
+	"fmt"
+	"github.com/bobilev/chatBOOK/dbwork"
 )
 
 func main() {
-	client, err := vkapi.NewClientFromToken("abc574aa7a283eeb99278f25c67d5d2e7b777c536dfa45778e6199916050cceaaad29de2991021da27800")
-	if err != nil {
-		log.Panic(err)
-	}
+	accessToken := "b25e0478970ebcde8977b7c7b9b8562e28cce81c9f80518b0fa72196fdc0588d833ff6f298a821d12ba18"
 
-	client.Log(true)
-
-	if err := client.InitLongPoll(0, 2); err != nil {
-		log.Panic(err)
-	}
-
-	updates, _, err := client.GetLPUpdatesChan(100, vkapi.LPConfig{25, vkapi.LPModeAttachments})
-	if err != nil {
-		log.Panic(err)
-	}
+	bot := vkchatbot.InitBot(accessToken)
+	bot.Log = 2 // 0,1,2 - уровни отображения логов
+	updates := bot.StartLongPollServer()
 
 	for update := range updates {
-		if update.Message == nil || !update.IsNewMessage() || update.Message.Outbox(){
-			continue
+		fmt.Println("UserID:",update.UserId,"Text Message:",update.Body)
+		if update.Body == "hi" {
+			res , _ := bot.SendMessage(update.UserId,"Hello")
+			fmt.Println("[res]",res.MessageID)
 		}
-
-		log.Printf("%s", update.Message.String())
-		if update.Message.Text == "/start" {
-			client.SendMessage(vkapi.NewMessage(vkapi.NewDstFromUserID(update.Message.FromID), "Hello!"))
+		if update.Body == "sex" {
+			res , _ := bot.SendDoc(update.UserId,"photo",456239017,"секси эльфийка")
+			fmt.Println("[res]",res.MessageID)
+		}
+		if update.Body == "db" {
+			allUser := dbwork.SelectAllUsers()
+			fmt.Println("allUser",allUser)
+			if _,ok := allUser[update.UserId]; ok {
+				fmt.Println("Есть в базе")
+			} else {
+				fmt.Println("Нету в базе")
+			}
+			//res , _ := bot.SendMessage(update.UserId,"Hello")
+			//fmt.Println("[res]",res.MessageID)
 		}
 
 	}
+
 }
