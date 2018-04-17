@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/bobilev/golang-chat-bot-vk"
-	"fmt"
 	"github.com/bobilev/chatBOOK/dbwork"
+	"fmt"
 )
 
 func main() {
@@ -29,6 +29,7 @@ func main() {
 			if _,ok := allUser[update.UserId]; ok {
 				fmt.Println("Есть в базе")
 			} else {
+				dbwork.InsertNewUser(update.UserId,0,"")
 				fmt.Println("Нету в базе")
 			}
 			//res , _ := bot.SendMessage(update.UserId,"Hello")

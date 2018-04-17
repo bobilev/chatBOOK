@@ -1,6 +1,7 @@
 package dbwork
 
 import (
+	_ "github.com/lib/pq"
 	"database/sql"
 	"os"
 	"log"

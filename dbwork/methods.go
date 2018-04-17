@@ -1,6 +1,10 @@
 package dbwork
 
-import "strconv"
+import (
+	"strconv"
+	"log"
+	"fmt"
+)
 
 func SelectAllUsers() map[int]StateUser{
 	db := dbConnect()
@@ -14,17 +18,31 @@ func SelectAllUsers() map[int]StateUser{
 		var userid int
 		var laststep string
 		var laststore string
+		var stateuserid StateUser
 
 		err = res.Scan(&userid,&laststep,&laststore)
 		checkErr(err)
-		var stateuserid StateUser
 		stateuserid.LastStore , _ = strconv.Atoi(laststore)
 		stateuserid.LastStep = laststep
 
 		mapList[userid] = stateuserid
 
 
-		//fmt.Println("LogSelectInfo - date",date)
+		fmt.Println("userid -",userid)
+		fmt.Println("laststep -",laststep)
+		fmt.Println("laststore -",laststore)
 	}
 	return mapList
+}
+func InsertNewUser(userid int, laststore int, laststep string) int{
+	db := dbConnect()
+	defer db.Close()
+
+	var LastInsertId int
+	// insert
+	err := db.QueryRow("INSERT INTO users(userid,laststore,laststep) values($1,$2,$3) returning userid",userid, laststore, laststep).Scan(&LastInsertId)
+	checkErr(err)
+
+	log.Println("{INSERT | NewUser}",LastInsertId)
+	return LastInsertId
 }
