@@ -3,6 +3,7 @@ package dbwork
 import (
 	"log"
 	"fmt"
+	"github.com/lib/pq"
 )
 
 func SelectAllUsers() map[int]StateUser{
@@ -62,6 +63,16 @@ func SelectStores() map[int]Store{
 		fmt.Println("media -",media)
 	}
 	return mapList
+}
+func SelectStep(storeid int,stepid string) {
+	db := dbConnect()
+	defer db.Close()
+
+	var answers []string
+	err := db.QueryRow("SELECT answers FROM steps2 WHERE storeid=$1 AND stepid=$2 ",storeid,stepid).Scan(pq.Array(&answers))
+	checkErr(err)
+	fmt.Println(answers)
+
 }
 func InsertNewUser(userid int, laststore int, laststep string) int{
 	db := dbConnect()

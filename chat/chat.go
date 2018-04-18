@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bobilev/chatBOOK/dbwork"
 	"strconv"
+	"strings"
 )
 type StatusUser struct {
 	LastStore int
@@ -23,9 +24,10 @@ func InitStatusUsers() map[int]StatusUser{
 		var st StatusUser
 		st.LastStore = user.LastStore
 		st.LastStep = user.LastStep
+		st.Answer = make(map[string]string)
 		mapStatusUsers[id] = st
 	}
-
+	return mapStatusUsers
 }
 func InitChatBot() {
 	accessToken := "b25e0478970ebcde8977b7c7b9b8562e28cce81c9f80518b0fa72196fdc0588d833ff6f298a821d12ba18"
@@ -37,28 +39,49 @@ func InitChatBot() {
 	mapStatusUsers := InitStatusUsers()
 	for update := range updates {
 		//fmt.Println("UserID:",update.UserId,"Text Message:",update.Body)
-		//if update.Body == "hi" {
-		//	res , _ := bot.SendMessage(update.UserId,"Hello")
-		//	fmt.Println("[res]",res.MessageID)
-		//}
+		if update.Body == "hi" {
+			dbwork.SelectStep(3,"1")
+
+
+			//res , _ := bot.SendMessage(update.UserId,"Hello")
+			//fmt.Println("[res]",res.MessageID)
+		}
 		//if update.Body == "sex" {
 		//	res , _ := bot.SendDoc(update.UserId,"photo",456239017,"секси эльфийка")
 		//	fmt.Println("[res]",res.MessageID)
 		//}
 		if update.Body != "" {
-			//allUser := dbwork.SelectAllUsers()
-			//fmt.Println("allUser",allUser)
 			if _,ok := mapStatusUsers[update.UserId]; ok {
 				fmt.Println("Есть в базе")
+				if _,ok := mapStatusUsers[update.UserId].Answer[update.Body]; ok {
+					//lastStore := mapStatusUsers[update.UserId].LastStore
+					nextStep := mapStatusUsers[update.UserId].Answer[update.Body]
 
+					//Определение Step от store или catalog
+					if strings.HasPrefix(nextStep,"ct") {
+						//catalog ct00
+
+					} else {
+						//store 00
+
+						//var answer string
+						//
+						//for k,v := range step.Answer {
+						//	answer += k+" - "+v
+						//}
+					}
+				}else {
+					//Answer нет такого
+				}
 
 			} else {
 				dbwork.InsertNewUser(update.UserId,0,"")
 				mapStatusUsers[update.UserId] = StatusUser{0,"",nil}
 				fmt.Println("Нету в базе")
+				res , _ := bot.SendMessage(update.UserId,"Добрый день, новичок")
+				fmt.Println("[res]",res.MessageID)
 			}
-			//res , _ := bot.SendMessage(update.UserId,"Hello")
-			//fmt.Println("[res]",res.MessageID)
+
 		}
 		if update.Body == "00" {
 			mapStores := dbwork.SelectStores()

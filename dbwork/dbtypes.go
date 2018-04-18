@@ -8,3 +8,14 @@ type Store struct {
 	Text string
 	Media int
 }
+type Step struct {
+	StoreId int
+	StepID string
+	Text string
+	Media int
+	Answers []Answer
+}
+type Answer struct {
+	NextStep string
+	Text string
+}
