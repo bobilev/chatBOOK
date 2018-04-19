@@ -16,14 +16,14 @@ func (su *StatusUser) Defalt() {
 	su.SetStore(0)
 	su.SetStep("0")
 	su.Answer = make(map[string]string)
-	su.Answer["0"] = "0"
+	su.Answer["0"]  = "ct0"
 	su.Answer["00"] = "ct00"
 }
 func (su *StatusUser) Clear() {
 	for k := range su.Answer {
 		delete(su.Answer,k)
 	}
-	su.Answer["0"] = "0"
+	su.Answer["0"]  = "ct0"
 	su.Answer["00"] = "ct00"
 }
 func (su *StatusUser) SetStore(newStore int) {
@@ -68,6 +68,7 @@ func InitChatBot() {
 	updates := bot.StartLongPollServer()
 
 	mapStatusUsers = InitStatusUsers()
+	HelloMain := "Добрый день, новичок\n0 - меню\n00 - каталог"
 	for update := range updates {
 		//fmt.Println("UserID:",update.UserId,"Text Message:",update.Body)
 		if update.Body == "hi" {
@@ -91,10 +92,14 @@ func InitChatBot() {
 						if nextStep[2:] == "00" {// Листать каталог дальше
 							arrStores := dbwork.SelectStores()
 							mapStatusUsers[update.UserId].NewAnswerStore(arrStores)
+							fmt.Println("2[StatusUser]",mapStatusUsers[update.UserId])
 
 							res , _ := bot.SendMessage(update.UserId,ConstructAnswerStore(arrStores))
 							fmt.Println("[res]",res.MessageID)
-						} else {//Загрузить выбраный Store
+						} else if nextStep[2:] == "0" {//Главное меню
+							res , _ := bot.SendMessage(update.UserId,HelloMain)
+							fmt.Println("[res]",res.MessageID)
+						} else{//Загрузить выбраный Store
 							Store ,_ := strconv.Atoi(nextStep[2:])
 							SendStep(bot,update,Store,"1")
 						}
@@ -104,7 +109,7 @@ func InitChatBot() {
 					}
 				}else {
 					//Answer нет такого
-					res , _ := bot.SendMessage(update.UserId,"Добрый день, новичок\n0 - меню\n00 - каталог")
+					res , _ := bot.SendMessage(update.UserId,HelloMain)
 					fmt.Println("[res]",res.MessageID)
 				}
 
@@ -114,7 +119,7 @@ func InitChatBot() {
 				st := new(StatusUser)
 				st.Defalt()
 				mapStatusUsers[update.UserId] = st
-				res , _ := bot.SendMessage(update.UserId,"Добрый день, новичок\n0 - меню\n00 - каталог")
+				res , _ := bot.SendMessage(update.UserId,HelloMain)
 				fmt.Println("[res]",res.MessageID)
 			}
 
@@ -126,7 +131,7 @@ func ConstructAnswer(Step dbwork.Step) string{
 	for k,v := range Step.Answers {
 		answer += strconv.Itoa(k+1)+" - "+v.Text+"\n"
 	}
-	answer += "0 - меню | 00 - каталог"
+	answer += "____________.__________\n0 - меню | 00 - каталог"
 	return answer
 }
 func ConstructAnswerStore(Store []dbwork.Store) string{
@@ -134,7 +139,7 @@ func ConstructAnswerStore(Store []dbwork.Store) string{
 	for k,v := range Store {
 		answer += strconv.Itoa(k+1)+" - "+v.Text+"\n"
 	}
-	answer += "0 - меню"
+	answer += "____.____\n0 - меню"
 	return answer
 }
 func SendStep(bot *vkchatbot.BotVkApiGroup,update vkchatbot.ObjectUpdate,LastStore int,NextStep string) {
