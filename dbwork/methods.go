@@ -40,8 +40,6 @@ func SelectStores() []Store{
 	db := dbConnect()
 	defer db.Close()
 
-
-
 	res, err := db.Query("SELECT * FROM stores ")
 	checkErr(err)
 	var Lists []Store
@@ -60,9 +58,9 @@ func SelectStores() []Store{
 
 		Lists = append(Lists,Store)
 
-		fmt.Println("storeid -",storeid)
-		fmt.Println("text -",text)
-		fmt.Println("media -",media)
+		//fmt.Println("storeid -",storeid)
+		//fmt.Println("text -",text)
+		//fmt.Println("media -",media)
 	}
 	return Lists
 }
@@ -72,17 +70,16 @@ func SelectStep(storeid int,stepid string) Step{
 
 	var answer []string
 	var step Step
+	fmt.Println("DB ->",storeid,stepid)
 	err := db.QueryRow("SELECT storeid,stepid,text,media,answer FROM steps WHERE storeid=$1 AND stepid=$2 ",storeid,stepid).Scan(&step.StoreId,&step.StepID,&step.Text,&step.Media,pq.Array(&answer))
 	checkErr(err)
-
-	fmt.Println(answer)
 
 	for _,val := range answer {
 		arrey := strings.Split(val,"|")
 		ans := Answer{arrey[0],arrey[1]}
 		step.Answers = append(step.Answers,ans)
 	}
-
+	fmt.Println("-[step]",step)
 	return step
 
 }
