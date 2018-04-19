@@ -12,6 +12,13 @@ type StatusUser struct {
 	LastStep string
 	Answer map[string]string
 }
+func (su *StatusUser) Defalt() {
+	su.SetStore(0)
+	su.SetStep("0")
+	su.Answer = make(map[string]string)
+	su.Answer["0"] = "0"
+	su.Answer["00"] = "ct00"
+}
 func (su *StatusUser) Clear() {
 	for k := range su.Answer {
 		delete(su.Answer,k)
@@ -29,25 +36,26 @@ func (su *StatusUser) NewAnswerStep(answers []dbwork.Answer) {
 	su.Clear()
 
 	for key,val := range answers {
-		su.Answer[strconv.Itoa(key)] = val.NextStep
+		su.Answer[strconv.Itoa(key+1)] = val.NextStep
 	}
 }
 func (su *StatusUser) NewAnswerStore(answers []dbwork.Store) {
 	su.Clear()
 
 	for key,val := range answers {
-		su.Answer[strconv.Itoa(key)] = strconv.Itoa(val.Storeid)
+		su.Answer[strconv.Itoa(key+1)] = strconv.Itoa(val.Storeid)
 	}
 }
 
-func InitStatusUsers() map[int]StatusUser{
-	mapStatusUsers := make(map[int]StatusUser)
+func InitStatusUsers() map[int]*StatusUser{
+	mapStatusUsers := make(map[int]*StatusUser)
 	allUser := dbwork.SelectAllUsers()
 	for id,user := range allUser {
-		var st StatusUser
+		st := new(StatusUser)
 		st.LastStore = user.LastStore
 		st.LastStep = user.LastStep
-		st.Answer = make(map[string]string)//  0 - nextStepid
+		//st.Answer = make(map[string]string)//  0 - nextStepid
+		st.Defalt()
 		mapStatusUsers[id] = st
 	}
 	return mapStatusUsers
@@ -72,8 +80,10 @@ func InitChatBot() {
 		//	fmt.Println("[res]",res.MessageID)
 		//}
 		if update.Body != "" {
+			fmt.Println(mapStatusUsers[update.UserId])
 			//Проверка на нахождения user в локальной базе
 			if _,ok := mapStatusUsers[update.UserId]; ok {
+
 				fmt.Println("Есть в базе")
 				if nextStep,ok := mapStatusUsers[update.UserId].Answer[update.Body]; ok {
 					//lastStore := mapStatusUsers[update.UserId].LastStore
@@ -117,32 +127,32 @@ func InitChatBot() {
 				mapStart["0"] = "0"
 				mapStart["00"] = "ct00"
 				dbwork.InsertNewUser(update.UserId,0,"0")
-				mapStatusUsers[update.UserId] = StatusUser{0,"0",mapStart}
+				st := new(StatusUser)
+				st.Defalt()
+				mapStatusUsers[update.UserId] = st
 				fmt.Println("Нету в базе")
 				res , _ := bot.SendMessage(update.UserId,"Добрый день, новичок\n0 - меню\n00 - каталог")
 				fmt.Println("[res]",res.MessageID)
 			}
 
 		}
-		if update.Body == "00" {
-
-		}
-
 	}
 }
 func ConstructAnswer(Step dbwork.Step) string{
 	var answer string
 
 	for k,v := range Step.Answers {
-		answer += strconv.Itoa(k)+" - "+v.Text
+		answer += strconv.Itoa(k+1)+" - "+v.Text+"\n"
 	}
+	answer += "0 - меню | 00 - каталог"
 	return answer
 }
 func ConstructAnswerStore(Store []dbwork.Store) string{
 	var answer string
 
 	for k,v := range Store {
-		answer += strconv.Itoa(k)+" - "+v.Text
+		answer += strconv.Itoa(k+1)+" - "+v.Text+"\n"
 	}
+	answer += "0 - меню"
 	return answer
 }
