@@ -4,6 +4,7 @@ import (
 	"log"
 	"fmt"
 	"github.com/lib/pq"
+	"strings"
 )
 
 func SelectAllUsers() map[int]StateUser{
@@ -15,12 +16,12 @@ func SelectAllUsers() map[int]StateUser{
 	res, err := db.Query("SELECT * FROM users ")
 	checkErr(err)
 	for res.Next() {
-		var userid int
+		var userid,laststore int
 		var laststep string
-		var laststore int
+
 		var stateuserid StateUser
 
-		err = res.Scan(&userid,&laststep,&laststore)
+		err = res.Scan(&userid,&laststore,&laststep)
 		checkErr(err)
 
 		stateuserid.LastStore = laststore
@@ -68,10 +69,21 @@ func SelectStep(storeid int,stepid string) {
 	db := dbConnect()
 	defer db.Close()
 
-	var answers []string
-	err := db.QueryRow("SELECT answers FROM steps2 WHERE storeid=$1 AND stepid=$2 ",storeid,stepid).Scan(pq.Array(&answers))
+	var answer []string
+	var step Step
+	err := db.QueryRow("SELECT storeid,stepid,text,media,answer FROM steps WHERE storeid=$1 AND stepid=$2 ",storeid,stepid).Scan(&step.StoreId,&step.StepID,&step.Text,&step.Media,pq.Array(&answer))
 	checkErr(err)
-	fmt.Println(answers)
+
+	fmt.Println(answer)
+
+	for _,val := range answer {
+		arrey := strings.Split(val,"|")
+		ans := Answer{arrey[0],arrey[1]}
+		step.Answers = append(step.Answers,ans)
+	}
+	fmt.Println(step)
+	fmt.Println(step.Answers[0].Text)
+	fmt.Println(step.Answers[0].NextStep)
 
 }
 func InsertNewUser(userid int, laststore int, laststep string) int{
