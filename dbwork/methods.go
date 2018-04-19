@@ -36,14 +36,15 @@ func SelectAllUsers() map[int]StateUser{
 	}
 	return mapList
 }
-func SelectStores() map[int]Store{
+func SelectStores() []Store{
 	db := dbConnect()
 	defer db.Close()
 
-	mapList := make(map[int]Store)
+
 
 	res, err := db.Query("SELECT * FROM stores ")
 	checkErr(err)
+	var Lists []Store
 	for res.Next() {
 		var storeid int
 		var text string
@@ -53,19 +54,19 @@ func SelectStores() map[int]Store{
 		err = res.Scan(&storeid,&text,&media)
 		checkErr(err)
 
+		Store.Storeid = storeid
 		Store.Media = media
 		Store.Text = text
 
-		mapList[storeid] = Store
-
+		Lists = append(Lists,Store)
 
 		fmt.Println("storeid -",storeid)
 		fmt.Println("text -",text)
 		fmt.Println("media -",media)
 	}
-	return mapList
+	return Lists
 }
-func SelectStep(storeid int,stepid string) {
+func SelectStep(storeid int,stepid string) Step{
 	db := dbConnect()
 	defer db.Close()
 
@@ -81,9 +82,8 @@ func SelectStep(storeid int,stepid string) {
 		ans := Answer{arrey[0],arrey[1]}
 		step.Answers = append(step.Answers,ans)
 	}
-	fmt.Println(step)
-	fmt.Println(step.Answers[0].Text)
-	fmt.Println(step.Answers[0].NextStep)
+
+	return step
 
 }
 func InsertNewUser(userid int, laststore int, laststep string) int{

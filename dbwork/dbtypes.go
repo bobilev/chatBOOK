@@ -5,6 +5,7 @@ type StateUser struct {
 	LastStep string
 }
 type Store struct {
+	Storeid int
 	Text string
 	Media int
 }

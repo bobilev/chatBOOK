@@ -16,7 +16,30 @@ func (su *StatusUser) Clear() {
 	for k := range su.Answer {
 		delete(su.Answer,k)
 	}
+	su.Answer["0"] = "0"
+	su.Answer["00"] = "ct00"
 }
+func (su *StatusUser) SetStore(newStore int) {
+	su.LastStore = newStore
+}
+func (su *StatusUser) SetStep(newStep string) {
+	su.LastStep = newStep
+}
+func (su *StatusUser) NewAnswerStep(answers []dbwork.Answer) {
+	su.Clear()
+
+	for key,val := range answers {
+		su.Answer[strconv.Itoa(key)] = val.NextStep
+	}
+}
+func (su *StatusUser) NewAnswerStore(answers []dbwork.Store) {
+	su.Clear()
+
+	for key,val := range answers {
+		su.Answer[strconv.Itoa(key)] = strconv.Itoa(val.Storeid)
+	}
+}
+
 func InitStatusUsers() map[int]StatusUser{
 	mapStatusUsers := make(map[int]StatusUser)
 	allUser := dbwork.SelectAllUsers()
@@ -24,7 +47,7 @@ func InitStatusUsers() map[int]StatusUser{
 		var st StatusUser
 		st.LastStore = user.LastStore
 		st.LastStep = user.LastStep
-		st.Answer = make(map[string]string)
+		st.Answer = make(map[string]string)//  0 - nextStepid
 		mapStatusUsers[id] = st
 	}
 	return mapStatusUsers
@@ -40,9 +63,7 @@ func InitChatBot() {
 	for update := range updates {
 		//fmt.Println("UserID:",update.UserId,"Text Message:",update.Body)
 		if update.Body == "hi" {
-			dbwork.SelectStep(3,"1")
-
-
+			//dbwork.SelectStep(3,"1")
 			//res , _ := bot.SendMessage(update.UserId,"Hello")
 			//fmt.Println("[res]",res.MessageID)
 		}
@@ -51,49 +72,77 @@ func InitChatBot() {
 		//	fmt.Println("[res]",res.MessageID)
 		//}
 		if update.Body != "" {
+			//Проверка на нахождения user в локальной базе
 			if _,ok := mapStatusUsers[update.UserId]; ok {
 				fmt.Println("Есть в базе")
-				if _,ok := mapStatusUsers[update.UserId].Answer[update.Body]; ok {
+				if nextStep,ok := mapStatusUsers[update.UserId].Answer[update.Body]; ok {
 					//lastStore := mapStatusUsers[update.UserId].LastStore
-					nextStep := mapStatusUsers[update.UserId].Answer[update.Body]
+					//nextStep := mapStatusUsers[update.UserId].Answer[update.Body]
 
 					//Определение Step от store или catalog
-					if strings.HasPrefix(nextStep,"ct") {
-						//catalog ct00
+					if strings.HasPrefix(nextStep,"ct") {//===========================================catalog ctN
 
-					} else {
-						//store 00
+						arrStores := dbwork.SelectStores()
+						mapStatusUsers[update.UserId].NewAnswerStore(arrStores)
 
-						//var answer string
-						//
-						//for k,v := range step.Answer {
-						//	answer += k+" - "+v
-						//}
+						res , _ := bot.SendMessage(update.UserId,ConstructAnswerStore(arrStores))
+						fmt.Println("[res]",res.MessageID)
+
+					} else {//===================================================================================store N
+
+						Step := dbwork.SelectStep(mapStatusUsers[update.UserId].LastStore,nextStep)
+
+						mapStatusUsers[update.UserId].SetStep(Step.StepID)
+						mapStatusUsers[update.UserId].NewAnswerStep(Step.Answers)
+
+						//text
+						if Step.Media != 0 {
+							res , _ := bot.SendDoc(update.UserId,"photo",Step.Media,Step.Text)
+							fmt.Println("[res]",res.MessageID)
+						} else {
+							res , _ := bot.SendMessage(update.UserId,Step.Text)
+							fmt.Println("[res]",res.MessageID)
+						}
+
+						//Answer
+						res , _ := bot.SendMessage(update.UserId,ConstructAnswer(Step))
+						fmt.Println("[res]",res.MessageID)
 					}
 				}else {
 					//Answer нет такого
 				}
 
 			} else {
-				dbwork.InsertNewUser(update.UserId,0,"")
-				mapStatusUsers[update.UserId] = StatusUser{0,"",nil}
+				mapStart := make(map[string]string)
+				mapStart["0"] = "0"
+				mapStart["00"] = "ct00"
+				dbwork.InsertNewUser(update.UserId,0,"0")
+				mapStatusUsers[update.UserId] = StatusUser{0,"0",mapStart}
 				fmt.Println("Нету в базе")
-				res , _ := bot.SendMessage(update.UserId,"Добрый день, новичок")
+				res , _ := bot.SendMessage(update.UserId,"Добрый день, новичок\n0 - меню\n00 - каталог")
 				fmt.Println("[res]",res.MessageID)
 			}
 
 		}
 		if update.Body == "00" {
-			mapStores := dbwork.SelectStores()
-			var catalog string
-			i := 1
-			for _, store := range mapStores {
-				catalog += strconv.Itoa(i) +" - "+ store.Text+"\n"
-				i++
-			}
-			res , _ := bot.SendMessage(update.UserId,catalog)
-			fmt.Println("[res]",res.MessageID)
+
 		}
 
 	}
+}
+func ConstructAnswer(Step dbwork.Step) string{
+	var answer string
+
+	for k,v := range Step.Answers {
+		answer += strconv.Itoa(k)+" - "+v.Text
+	}
+	return answer
+}
+func ConstructAnswerStore(Store []dbwork.Store) string{
+	var answer string
+
+	for k,v := range Store {
+		answer += strconv.Itoa(k)+" - "+v.Text
+	}
+	return answer
 }
