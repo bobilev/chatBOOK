@@ -31,4 +31,31 @@ func CreateAllTable() error {
 	}
 	return nil
 }
-var createTableStatements = []string{}
+var createTableStatements = []string{
+	`CREATE SEQUENCE IF NOT EXISTS public.stores_id_seq
+    	INCREMENT 1
+    	START 1
+    	MINVALUE 1
+    	MAXVALUE 9223372036854775807
+    	CACHE 1;`,
+	`CREATE TABLE IF NOT EXISTS public.users(
+    	userid integer,
+    	laststore integer,
+    	laststep text COLLATE pg_catalog."default"
+	)`,
+	`CREATE TABLE IF NOT EXISTS public.stores(
+    	id integer NOT NULL DEFAULT nextval('stores_id_seq'::regclass),
+		name text COLLATE pg_catalog."default",
+    	media integer,
+    	CONSTRAINT stores_pkey PRIMARY KEY (id)
+	)`,
+	`CREATE TABLE IF NOT EXISTS public.steps(
+    	id integer NOT NULL DEFAULT nextval('steps2_id_seq'::regclass),
+    	storeid integer NOT NULL,
+    	stepid text COLLATE pg_catalog."default",
+    	text text COLLATE pg_catalog."default",
+    	media integer,
+    	answer text[] COLLATE pg_catalog."default" NOT NULL,
+    	CONSTRAINT steps2_pkey PRIMARY KEY (id)
+	)`,
+}
