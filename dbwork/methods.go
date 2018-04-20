@@ -18,7 +18,6 @@ func SelectAllUsers() map[int]StateUser{
 	for res.Next() {
 		var userid,laststore int
 		var laststep string
-
 		var stateuserid StateUser
 
 		err = res.Scan(&userid,&laststore,&laststep)
@@ -28,7 +27,6 @@ func SelectAllUsers() map[int]StateUser{
 		stateuserid.LastStep = laststep
 
 		mapList[userid] = stateuserid
-
 
 		fmt.Println("userid -",userid)
 		fmt.Println("laststep -",laststep)
@@ -57,10 +55,6 @@ func SelectStores() []Store{
 		Store.Text = text
 
 		Lists = append(Lists,Store)
-
-		//fmt.Println("storeid -",storeid)
-		//fmt.Println("text -",text)
-		//fmt.Println("media -",media)
 	}
 	return Lists
 }
@@ -81,7 +75,6 @@ func SelectStep(storeid int,stepid string) Step{
 	}
 	fmt.Println("-[step]",step)
 	return step
-
 }
 func InsertNewUser(userid int, laststore int, laststep string) int{
 	db := dbConnect()

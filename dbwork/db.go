@@ -13,26 +13,22 @@ func dbConnect() *sql.DB{
 	return db
 }
 
-
-
-
-
-
 func checkErr(err error) {
 	if err != nil {
 		log.Println("===========[Err]========\n",err)
 	}
 }
-// createTable creates the table, and if necessary, the database.
-//func CreateAllTable() error {
-//	db := dbConnect()
-//	defer db.Close()
-//
-//	for _, stmt := range createTableStatements {
-//		_, err := db.Exec(stmt)
-//		if err != nil {
-//			return err
-//		}
-//	}
-//	return nil
-//}
+//createTable creates the table, and if necessary, the database.
+func CreateAllTable() error {
+	db := dbConnect()
+	defer db.Close()
+
+	for _, stmt := range createTableStatements {
+		_, err := db.Exec(stmt)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+var createTableStatements = []string{}

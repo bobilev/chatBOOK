@@ -34,14 +34,12 @@ func (su *StatusUser) SetStep(newStep string) {
 }
 func (su *StatusUser) NewAnswerStep(answers []dbwork.Answer) {
 	su.Clear()
-
 	for key,val := range answers {
 		su.Answer[strconv.Itoa(key+1)] = val.NextStep
 	}
 }
 func (su *StatusUser) NewAnswerStore(answers []dbwork.Store) {
 	su.Clear()
-
 	for key,val := range answers {
 		su.Answer[strconv.Itoa(key+1)] = "ct"+strconv.Itoa(val.Storeid)
 	}
@@ -54,7 +52,7 @@ func InitStatusUsers() map[int]*StatusUser{
 		st := new(StatusUser)
 		st.LastStore = user.LastStore
 		st.LastStep = user.LastStep
-		//st.Answer = make(map[string]string)//  0 - nextStepid
+
 		st.Defalt()
 		mapStatusUsers[id] = st
 	}
@@ -70,16 +68,7 @@ func InitChatBot() {
 	mapStatusUsers = InitStatusUsers()
 	HelloMain := "Добрый день, новичок\n0 - меню\n00 - каталог"
 	for update := range updates {
-		//fmt.Println("UserID:",update.UserId,"Text Message:",update.Body)
-		if update.Body == "hi" {
-			//dbwork.SelectStep(3,"1")
-			//res , _ := bot.SendMessage(update.UserId,"Hello")
-			//fmt.Println("[res]",res.MessageID)
-		}
-		//if update.Body == "sex" {
-		//	res , _ := bot.SendDoc(update.UserId,"photo",456239017,"секси эльфийка")
-		//	fmt.Println("[res]",res.MessageID)
-		//}
+
 		if update.Body != "" {
 			fmt.Println("1[StatusUser]",mapStatusUsers[update.UserId])
 			//Проверка на нахождения user в локальной базе
@@ -112,7 +101,6 @@ func InitChatBot() {
 					res , _ := bot.SendMessage(update.UserId,HelloMain)
 					fmt.Println("[res]",res.MessageID)
 				}
-
 			} else {
 				fmt.Println("Нету в базе")
 				dbwork.InsertNewUser(update.UserId,0,"0")
@@ -122,25 +110,8 @@ func InitChatBot() {
 				res , _ := bot.SendMessage(update.UserId,HelloMain)
 				fmt.Println("[res]",res.MessageID)
 			}
-
 		}
 	}
-}
-func ConstructAnswer(Step dbwork.Step) string{
-	var answer string
-	for k,v := range Step.Answers {
-		answer += strconv.Itoa(k+1)+" - "+v.Text+"\n"
-	}
-	answer += "____________.__________\n0 - меню | 00 - каталог"
-	return answer
-}
-func ConstructAnswerStore(Store []dbwork.Store) string{
-	var answer string
-	for k,v := range Store {
-		answer += strconv.Itoa(k+1)+" - "+v.Text+"\n"
-	}
-	answer += "____.____\n0 - меню"
-	return answer
 }
 func SendStep(bot *vkchatbot.BotVkApiGroup,update vkchatbot.ObjectUpdate,LastStore int,NextStep string) {
 	Step := dbwork.SelectStep(LastStore,NextStep)
@@ -158,4 +129,20 @@ func SendStep(bot *vkchatbot.BotVkApiGroup,update vkchatbot.ObjectUpdate,LastSto
 
 	res , _ := bot.SendMessage(update.UserId,ConstructAnswer(Step))
 	fmt.Println("[res]",res.MessageID)
+}
+func ConstructAnswer(Step dbwork.Step) string{
+	var answer string
+	for k,v := range Step.Answers {
+		answer += strconv.Itoa(k+1)+" - "+v.Text+"\n"
+	}
+	answer += "____________.__________\n0 - меню | 00 - каталог"
+	return answer
+}
+func ConstructAnswerStore(Store []dbwork.Store) string{
+	var answer string
+	for k,v := range Store {
+		answer += strconv.Itoa(k+1)+" - "+v.Text+"\n"
+	}
+	answer += "____.____\n0 - меню"
+	return answer
 }
