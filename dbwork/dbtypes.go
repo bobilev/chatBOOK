@@ -15,6 +15,7 @@ type Step struct {
 	Text string
 	Media int
 	Answers []Answer
+	TypeDoc string
 }
 type Answer struct {
 	NextStep string

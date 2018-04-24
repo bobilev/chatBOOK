@@ -62,7 +62,7 @@ func InitChatBot() {
 	accessToken := "b25e0478970ebcde8977b7c7b9b8562e28cce81c9f80518b0fa72196fdc0588d833ff6f298a821d12ba18"
 
 	bot := vkchatbot.InitBot(accessToken)
-	bot.Log = 1 // 0,1,2 - уровни отображения логов
+	bot.Log = 2 // 0,1,2 - уровни отображения логов
 	updates := bot.StartLongPollServer()
 
 	mapStatusUsers = InitStatusUsers()
@@ -120,7 +120,8 @@ func SendStep(bot *vkchatbot.BotVkApiGroup,update vkchatbot.ObjectUpdate,LastSto
 	mapStatusUsers[update.UserId].NewAnswerStep(Step.Answers)
 	fmt.Println("2[StatusUser]",mapStatusUsers[update.UserId])
 	if Step.Media != 0 {
-		res , _ := bot.SendDoc(update.UserId,"photo",Step.Media,Step.Text)
+
+		res , _ := bot.SendDoc(update.UserId,Step.TypeDoc,Step.Media,Step.Text)
 		fmt.Println("[res]",res.MessageID)
 	} else {
 		res , _ := bot.SendMessage(update.UserId,Step.Text)
@@ -135,7 +136,7 @@ func ConstructAnswer(Step dbwork.Step) string{
 	for k,v := range Step.Answers {
 		answer += strconv.Itoa(k+1)+" - "+v.Text+"\n"
 	}
-	answer += "____________.__________\n0 - меню | 00 - каталог"
+	//answer += "____________.__________\n0 - меню | 00 - каталог"
 	return answer
 }
 func ConstructAnswerStore(Store []dbwork.Store) string{
@@ -143,6 +144,6 @@ func ConstructAnswerStore(Store []dbwork.Store) string{
 	for k,v := range Store {
 		answer += strconv.Itoa(k+1)+" - "+v.Text+"\n"
 	}
-	answer += "____.____\n0 - меню"
+	//answer += "____.____\n0 - меню"
 	return answer
 }
