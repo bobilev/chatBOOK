@@ -83,8 +83,12 @@ func InitChatBot() {
 							mapStatusUsers[update.UserId].NewAnswerStore(arrStores)
 							fmt.Println("2[StatusUser]",mapStatusUsers[update.UserId])
 
-							res , _ := bot.SendMessage(update.UserId,ConstructAnswerStore(arrStores))
-							fmt.Println("[res]",res.MessageID)
+							//media
+							res0 , _ := bot.SendDocs(update.UserId,SendCategory(arrStores),"")
+							fmt.Println("[res]",res0.MessageID)
+							//answer
+							res1 , _ := bot.SendMessage(update.UserId,ConstructAnswerStore(arrStores))
+							fmt.Println("[res]",res1.MessageID)
 						} else if nextStep[2:] == "0" {//Главное меню
 							res , _ := bot.SendMessage(update.UserId,HelloMain)
 							fmt.Println("[res]",res.MessageID)
@@ -119,9 +123,13 @@ func SendStep(bot *vkchatbot.BotVkApiGroup,update vkchatbot.ObjectUpdate,LastSto
 	mapStatusUsers[update.UserId].SetStore(LastStore)
 	mapStatusUsers[update.UserId].NewAnswerStep(Step.Answers)
 	fmt.Println("2[StatusUser]",mapStatusUsers[update.UserId])
+	var Attach vkchatbot.Attachment
+	Attach.TypeDoc = Step.TypeDoc
+	Attach.MediaId = Step.Media
+
 	if Step.Media != 0 {
 
-		res , _ := bot.SendDoc(update.UserId,Step.TypeDoc,Step.Media,Step.Text)
+		res , _ := bot.SendDoc(update.UserId,Attach,Step.Text)
 		fmt.Println("[res]",res.MessageID)
 	} else {
 		res , _ := bot.SendMessage(update.UserId,Step.Text)
@@ -130,6 +138,19 @@ func SendStep(bot *vkchatbot.BotVkApiGroup,update vkchatbot.ObjectUpdate,LastSto
 
 	res , _ := bot.SendMessage(update.UserId,ConstructAnswer(Step))
 	fmt.Println("[res]",res.MessageID)
+}
+func SendCategory(arrStores []dbwork.Store) []vkchatbot.Attachment {
+
+	var arrAttach []vkchatbot.Attachment
+
+	for _,store := range arrStores {
+		var Attach vkchatbot.Attachment
+		Attach.MediaId = store.Media
+		Attach.TypeDoc = "photo"
+		arrAttach = append(arrAttach,Attach)
+	}
+	return arrAttach
+
 }
 func ConstructAnswer(Step dbwork.Step) string{
 	var answer string
