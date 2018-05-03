@@ -62,7 +62,7 @@ func InitChatBot() {
 	accessToken := "b25e0478970ebcde8977b7c7b9b8562e28cce81c9f80518b0fa72196fdc0588d833ff6f298a821d12ba18"
 
 	bot := vkchatbot.InitBot(accessToken)
-	bot.Log = 2 // 0,1,2 - уровни отображения логов
+	bot.Log = 3 // 0,1,2 - уровни отображения логов
 	updates := bot.StartLongPollServer()
 
 	mapStatusUsers = InitStatusUsers()
@@ -149,7 +149,7 @@ func SendCategory(arrStores []dbwork.Store) []vkchatbot.Attachment {
 		var Attach vkchatbot.Attachment
 		Attach.MediaId = store.Media
 		Attach.TypeDoc = "photo"
-		Attach.OwnerId = 165847301
+		Attach.OwnerId = 164670950
 		arrAttach = append(arrAttach,Attach)
 	}
 	return arrAttach
