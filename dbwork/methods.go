@@ -65,7 +65,8 @@ func SelectStep(storeid int,stepid string) Step{
 	var answer []string
 	var step Step
 	fmt.Println("DB ->",storeid,stepid)
-	err := db.QueryRow("SELECT storeid,stepid,text,media,answer,typedoc FROM steps WHERE storeid=$1 AND stepid=$2 ",storeid,stepid).Scan(&step.StoreId,&step.StepID,&step.Text,&step.Media,pq.Array(&answer),&step.TypeDoc)
+	err := db.QueryRow("SELECT storeid,stepid,text,media,answer,typedoc FROM steps WHERE storeid=$1 AND stepid=$2 ",
+		storeid,stepid).Scan(&step.StoreId,&step.StepID,&step.Text,&step.Media,pq.Array(&answer),&step.TypeDoc,&step.AccessKey)
 	checkErr(err)
 
 	for _,val := range answer {

@@ -16,6 +16,7 @@ type Step struct {
 	Media int
 	Answers []Answer
 	TypeDoc string
+	AccessKey string
 }
 type Answer struct {
 	NextStep string

@@ -126,6 +126,8 @@ func SendStep(bot *vkchatbot.BotVkApiGroup,update vkchatbot.ObjectUpdate,LastSto
 	var Attach vkchatbot.Attachment
 	Attach.TypeDoc = Step.TypeDoc
 	Attach.MediaId = Step.Media
+	Attach.OwnerId = 165847301
+	Attach.AccessKey = Step.AccessKey
 
 	if Step.Media != 0 {
 
@@ -147,6 +149,7 @@ func SendCategory(arrStores []dbwork.Store) []vkchatbot.Attachment {
 		var Attach vkchatbot.Attachment
 		Attach.MediaId = store.Media
 		Attach.TypeDoc = "photo"
+		Attach.OwnerId = 165847301
 		arrAttach = append(arrAttach,Attach)
 	}
 	return arrAttach
