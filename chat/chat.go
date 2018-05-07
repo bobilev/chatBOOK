@@ -6,6 +6,8 @@ import (
 	"github.com/bobilev/chatBOOK/dbwork"
 	"strconv"
 	"strings"
+	"os"
+	"log"
 )
 type StatusUser struct {
 	LastStore int
@@ -59,7 +61,10 @@ func InitStatusUsers() map[int]*StatusUser{
 	return mapStatusUsers
 }
 func InitChatBot() {
-	accessToken := "b25e0478970ebcde8977b7c7b9b8562e28cce81c9f80518b0fa72196fdc0588d833ff6f298a821d12ba18"
+	accessToken := os.Getenv("accesstokenvk")
+	if accessToken == "" {
+		log.Fatal("$accessToken must be set")
+	}
 
 	bot := vkchatbot.InitBot(accessToken)
 	bot.Log = 3 // 0,1,2 - уровни отображения логов
