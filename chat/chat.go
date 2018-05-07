@@ -100,10 +100,12 @@ func InitChatBot() {
 						} else{//Загрузить выбраный Store
 							Store ,_ := strconv.Atoi(nextStep[2:])
 							SendStep(bot,update,Store,"1")
+							dbwork.UpdateUserStep(update.UserId,Store,"1")
 						}
 
 					} else {//===================================================================================store N
 						SendStep(bot,update,mapStatusUsers[update.UserId].LastStore,nextStep)
+						dbwork.UpdateUserStep(update.UserId,mapStatusUsers[update.UserId].LastStore,nextStep)
 					}
 				}else {
 					//Answer нет такого

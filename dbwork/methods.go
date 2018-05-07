@@ -89,3 +89,21 @@ func InsertNewUser(userid int, laststore int, laststep string) int{
 	log.Println("{INSERT | NewUser}",LastInsertId)
 	return LastInsertId
 }
+func UpdateUserStep(userid int,laststore int,laststep string) {
+	db := dbConnect()
+	defer db.Close()
+
+	// update
+	stmt, err := db.Prepare("UPDATE users SET laststore=$2,laststep=$3 WHERE userid=$1")
+	checkErr(err)
+
+	res, err := stmt.Exec(userid, laststore, laststep)
+	checkErr(err)
+
+	affect, err := res.RowsAffected()//Сколько записей удалось обновить
+	checkErr(err)
+	if affect == 0 {
+		fmt.Println("[ErrDB: UPDATE] UpdateUserStep")
+	}
+	fmt.Println(affect)
+}
