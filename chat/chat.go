@@ -15,8 +15,8 @@ type StatusUser struct {
 	Answer map[string]string
 }
 func (su *StatusUser) Defalt() {
-	su.SetStore(0)
-	su.SetStep("0")
+	//su.SetStore(0)
+	//su.SetStep("0")
 	su.Answer = make(map[string]string)
 	su.Answer["0"]  = "ct0"
 	su.Answer["00"] = "ct00"
@@ -27,6 +27,11 @@ func (su *StatusUser) Clear() {
 	}
 	su.Answer["0"]  = "ct0"
 	su.Answer["00"] = "ct00"
+}
+func (su *StatusUser) Continue() {
+	if su.LastStore != 0 {
+		su.Answer["1"]  = "continue"
+	}
 }
 func (su *StatusUser) SetStore(newStore int) {
 	su.LastStore = newStore
@@ -46,6 +51,12 @@ func (su *StatusUser) NewAnswerStore(answers []dbwork.Store) {
 		su.Answer[strconv.Itoa(key+1)] = "ct"+strconv.Itoa(val.Storeid)
 	}
 }
+func (su *StatusUser) RecoveryAnswer() {
+	if su.LastStore != 0 {
+		Step := dbwork.SelectStep(su.LastStore,su.LastStep)
+		su.NewAnswerStep(Step.Answers)
+	}
+}
 var mapStatusUsers map[int]*StatusUser
 func InitStatusUsers() map[int]*StatusUser{
 	mapStatusUsers := make(map[int]*StatusUser)
@@ -56,6 +67,7 @@ func InitStatusUsers() map[int]*StatusUser{
 		st.LastStep = user.LastStep
 
 		st.Defalt()
+		st.RecoveryAnswer()
 		mapStatusUsers[id] = st
 	}
 	return mapStatusUsers
@@ -71,11 +83,12 @@ func InitChatBot() {
 	updates := bot.StartLongPollServer()
 
 	mapStatusUsers = InitStatusUsers()
-	HelloMain := "Добрый день, новичок\n0 - меню\n00 - каталог"
 	for update := range updates {
+		continueSore := ""
+		if mapStatusUsers[update.UserId].LastStore != 0 {continueSore = "1 - продолжить\n"}
+		HelloMain := "Добрый день, новичок\n"+continueSore+"0 - меню\n00 - каталог"
 
 		if update.Body != "" {
-			fmt.Println("1[StatusUser]",mapStatusUsers[update.UserId])
 			//Проверка на нахождения user в локальной базе
 			if _,ok := mapStatusUsers[update.UserId]; ok {
 				fmt.Println("Есть в базе")
@@ -86,6 +99,7 @@ func InitChatBot() {
 						if nextStep[2:] == "00" {// Листать каталог дальше
 							arrStores := dbwork.SelectStores()
 							mapStatusUsers[update.UserId].NewAnswerStore(arrStores)
+							//mapStatusUsers[update.UserId].Continue()
 							fmt.Println("2[StatusUser]",mapStatusUsers[update.UserId])
 
 							//media
@@ -95,17 +109,21 @@ func InitChatBot() {
 							res1 , _ := bot.SendMessage(update.UserId,ConstructAnswerStore(arrStores))
 							fmt.Println("[res]",res1.MessageID)
 						} else if nextStep[2:] == "0" {//Главное меню
+							mapStatusUsers[update.UserId].Continue()
 							res , _ := bot.SendMessage(update.UserId,HelloMain)
 							fmt.Println("[res]",res.MessageID)
+
 						} else{//Загрузить выбраный Store
 							Store ,_ := strconv.Atoi(nextStep[2:])
 							SendStep(bot,update,Store,"1")
-							dbwork.UpdateUserStep(update.UserId,Store,"1")
 						}
+
+					} else if nextStep == "continue"{//=========================================================continue
+						SendStep(bot,update,mapStatusUsers[update.UserId].LastStore,mapStatusUsers[update.UserId].LastStep)
 
 					} else {//===================================================================================store N
 						SendStep(bot,update,mapStatusUsers[update.UserId].LastStore,nextStep)
-						dbwork.UpdateUserStep(update.UserId,mapStatusUsers[update.UserId].LastStore,nextStep)
+
 					}
 				}else {
 					//Answer нет такого
@@ -118,6 +136,7 @@ func InitChatBot() {
 				st := new(StatusUser)
 				st.Defalt()
 				mapStatusUsers[update.UserId] = st
+
 				res , _ := bot.SendMessage(update.UserId,HelloMain)
 				fmt.Println("[res]",res.MessageID)
 			}
@@ -129,7 +148,10 @@ func SendStep(bot *vkchatbot.BotVkApiGroup,update vkchatbot.ObjectUpdate,LastSto
 	mapStatusUsers[update.UserId].SetStep(Step.StepID)
 	mapStatusUsers[update.UserId].SetStore(LastStore)
 	mapStatusUsers[update.UserId].NewAnswerStep(Step.Answers)
-	fmt.Println("2[StatusUser]",mapStatusUsers[update.UserId])
+
+	dbwork.UpdateUserStep(update.UserId,LastStore,NextStep)
+
+	//fmt.Println("2[StatusUser]",mapStatusUsers[update.UserId])
 	var Attach vkchatbot.Attachment
 	Attach.TypeDoc = Step.TypeDoc
 	Attach.MediaId = Step.Media
