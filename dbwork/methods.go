@@ -38,7 +38,7 @@ func SelectStores() []Store{
 	db := dbConnect()
 	defer db.Close()
 
-	res, err := db.Query("SELECT * FROM stores ")
+	res, err := db.Query("SELECT * FROM stores ORDER BY id ASC")
 	checkErr(err)
 	var Lists []Store
 	for res.Next() {
@@ -57,6 +57,17 @@ func SelectStores() []Store{
 		Lists = append(Lists,Store)
 	}
 	return Lists
+}
+func SelectStoreName(id int) string {
+	db := dbConnect()
+	defer db.Close()
+
+	var name string
+	fmt.Println("DB ->",id)
+	err := db.QueryRow("SELECT name FROM public.stores WHERE id = $1", id).Scan(&name)
+	checkErr(err)
+
+	return name
 }
 func SelectStep(storeid int,stepid string) Step{
 	db := dbConnect()

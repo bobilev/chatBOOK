@@ -11,6 +11,7 @@ import (
 )
 type StatusUser struct {
 	LastStore int
+	LastStoreName string
 	LastStep string
 	Answer map[string]string
 }
@@ -35,6 +36,9 @@ func (su *StatusUser) Continue() {
 }
 func (su *StatusUser) SetStore(newStore int) {
 	su.LastStore = newStore
+}
+func (su *StatusUser) SetLastStoreName(newLastStoreName string) {
+	su.LastStoreName = newLastStoreName
 }
 func (su *StatusUser) SetStep(newStep string) {
 	su.LastStep = newStep
@@ -85,7 +89,7 @@ func InitChatBot() {
 	mapStatusUsers = InitStatusUsers()
 	for update := range updates {
 		continueSore := ""
-		if mapStatusUsers[update.UserId].LastStore != 0 {continueSore = "1 - продолжить\n"}
+		if mapStatusUsers[update.UserId].LastStore != 0 {continueSore = "1 - продолжить ("+mapStatusUsers[update.UserId].LastStoreName+")\n"}
 		HelloMain := "Добрый день, новичок\n"+continueSore+"0 - меню\n00 - каталог"
 
 		if update.Body != "" {
@@ -115,6 +119,7 @@ func InitChatBot() {
 
 						} else{//Загрузить выбраный Store
 							Store ,_ := strconv.Atoi(nextStep[2:])
+							mapStatusUsers[update.UserId].LastStoreName = dbwork.SelectStoreName(Store)
 							SendStep(bot,update,Store,"1")
 						}
 
