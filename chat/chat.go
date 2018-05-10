@@ -10,6 +10,7 @@ import (
 	"log"
 )
 type StatusUser struct {
+	Id int
 	LastStore int
 	LastStoreName string
 	LastStep string
@@ -43,6 +44,12 @@ func (su *StatusUser) SetLastStoreName(newLastStoreName string) {
 func (su *StatusUser) SetStep(newStep string) {
 	su.LastStep = newStep
 }
+func (su *StatusUser) DoneStore() {
+	su.SetStore(0)
+	su.SetLastStoreName("")
+	su.SetStep("0")
+	dbwork.UpdateUserStep(su.Id,0,"0")
+}
 func (su *StatusUser) NewAnswerStep(answers []dbwork.Answer) {
 	su.Clear()
 	for key,val := range answers {
@@ -67,6 +74,7 @@ func InitStatusUsers() map[int]*StatusUser{
 	allUser := dbwork.SelectAllUsers()
 	for id,user := range allUser {
 		st := new(StatusUser)
+		st.Id = id
 		st.LastStore = user.LastStore
 		st.LastStep = user.LastStep
 
@@ -125,6 +133,20 @@ func InitChatBot() {
 
 					} else if nextStep == "continue"{//=========================================================continue
 						SendStep(bot,update,mapStatusUsers[update.UserId].LastStore,mapStatusUsers[update.UserId].LastStep)
+
+					} else if nextStep == "end"{//================================================================== end
+						mapStatusUsers[update.UserId].DoneStore()
+						arrStores := dbwork.SelectStores()
+						mapStatusUsers[update.UserId].NewAnswerStore(arrStores)
+						//mapStatusUsers[update.UserId].Continue()
+						fmt.Println("2[StatusUser]",mapStatusUsers[update.UserId])
+
+						//media
+						res0 , _ := bot.SendDocs(update.UserId,SendCategory(arrStores),"")
+						fmt.Println("[res]",res0.MessageID)
+						//answer
+						res1 , _ := bot.SendMessage(update.UserId,ConstructAnswerStore(arrStores))
+						fmt.Println("[res]",res1.MessageID)
 
 					} else {//===================================================================================store N
 						SendStep(bot,update,mapStatusUsers[update.UserId].LastStore,nextStep)
