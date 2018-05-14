@@ -23,6 +23,11 @@ func (su *StatusUser) Defalt() {
 	su.Answer["0"]  = "ct0"
 	su.Answer["00"] = "ct00"
 }
+func (su *StatusUser) Start() {
+	su.Answer = make(map[string]string)
+	su.Answer["1"]  = "faq"
+	su.Answer["2"]  = "ct0"
+}
 func (su *StatusUser) Clear() {
 	for k := range su.Answer {
 		delete(su.Answer,k)
@@ -96,14 +101,18 @@ func InitChatBot() {
 
 	mapStatusUsers = InitStatusUsers()
 	for update := range updates {
-		continueSore := ""
-		if mapStatusUsers[update.UserId].LastStore != 0 {continueSore = "1 - продолжить ("+mapStatusUsers[update.UserId].LastStoreName+")\n"}
-		HelloMain := "Добрый день, новичок\n"+continueSore+"0 - меню\n00 - каталог"
-
 		if update.Body != "" {
 			//Проверка на нахождения user в локальной базе
 			if _,ok := mapStatusUsers[update.UserId]; ok {
 				fmt.Println("Есть в базе")
+				continueStore := ""
+
+				us := mapStatusUsers[update.UserId].LastStore
+				if us != 0 && us != 999 {
+					continueStore = "1 - продолжить ("+mapStatusUsers[update.UserId].LastStoreName+")\n"
+				}
+				HelloMain := "Меню \n"+continueStore+"0 - меню\n00 - каталог"
+
 				if nextStep,ok := mapStatusUsers[update.UserId].Answer[update.Body]; ok {
 					//Определение Step от store или catalog
 					if strings.HasPrefix(nextStep,"ct") {//===========================================catalog ctN
@@ -134,6 +143,23 @@ func InitChatBot() {
 					} else if nextStep == "continue"{//=========================================================continue
 						SendStep(bot,update,mapStatusUsers[update.UserId].LastStore,mapStatusUsers[update.UserId].LastStep)
 
+					} else if nextStep == "faq"{//=========================================================continue
+						//var Attach vkchatbot.Attachment
+						//Attach.OwnerId = 164670950
+						//Attach.MediaId = 45
+						//Attach.TypeDoc = "wall"
+						//ans := dbwork.Answer{"ct00","Дальше"}
+						//answerStepStart := new(dbwork.Step)
+						//answerStepStart.Answers = []
+						//mapStatusUsers[update.UserId].NewAnswerStep(Step.Answers)
+						//
+						//res0 , _ := bot.SendDoc(update.UserId,Attach,"")
+						//fmt.Println("[res]",res0.MessageID)
+						//
+						//res , _ := bot.SendMessage(update.UserId,ConstructAnswer(Step))
+						//fmt.Println("[res]",res.MessageID)
+						SendStep(bot,update,999,"1")
+
 					} else if nextStep == "end"{//================================================================== end
 						mapStatusUsers[update.UserId].DoneStore()
 						arrStores := dbwork.SelectStores()
@@ -162,9 +188,10 @@ func InitChatBot() {
 				dbwork.InsertNewUser(update.UserId,0,"0")
 				st := new(StatusUser)
 				st.Defalt()
+				st.Start()
 				mapStatusUsers[update.UserId] = st
 
-				res , _ := bot.SendMessage(update.UserId,HelloMain)
+				res , _ := bot.SendMessage(update.UserId,"Добрый день, показать обучение? Это займет всего 1 минуту.\n1 - Давай\n2 - Неа")
 				fmt.Println("[res]",res.MessageID)
 			}
 		}
@@ -172,8 +199,8 @@ func InitChatBot() {
 }
 func SendStep(bot *vkchatbot.BotVkApiGroup,update vkchatbot.ObjectUpdate,LastStore int,NextStep string) {
 	Step := dbwork.SelectStep(LastStore,NextStep)
-	mapStatusUsers[update.UserId].SetStep(Step.StepID)
 	mapStatusUsers[update.UserId].SetStore(LastStore)
+	mapStatusUsers[update.UserId].SetStep(Step.StepID)
 	mapStatusUsers[update.UserId].NewAnswerStep(Step.Answers)
 
 	dbwork.UpdateUserStep(update.UserId,LastStore,NextStep)
@@ -183,6 +210,9 @@ func SendStep(bot *vkchatbot.BotVkApiGroup,update vkchatbot.ObjectUpdate,LastSto
 	Attach.TypeDoc = Step.TypeDoc
 	Attach.MediaId = Step.Media
 	Attach.OwnerId = 165847301
+	if LastStore == 999 {//faq
+		Attach.OwnerId = 164670950
+	}
 	Attach.AccessKey = Step.AccessKey
 
 	if Step.Media != 0 {
