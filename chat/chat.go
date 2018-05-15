@@ -17,11 +17,8 @@ type StatusUser struct {
 	Answer map[string]string
 }
 func (su *StatusUser) Defalt() {
-	//su.SetStore(0)
-	//su.SetStep("0")
 	su.Answer = make(map[string]string)
 	su.Answer["0"]  = "ct0"
-	su.Answer["00"] = "ct00"
 }
 func (su *StatusUser) Start() {
 	su.Answer = make(map[string]string)
@@ -33,7 +30,6 @@ func (su *StatusUser) Clear() {
 		delete(su.Answer,k)
 	}
 	su.Answer["0"]  = "ct0"
-	su.Answer["00"] = "ct00"
 }
 func (su *StatusUser) Continue() {
 	if su.LastStore != 0 {
@@ -117,7 +113,7 @@ func InitChatBot() {
 					//Определение Step от store или catalog
 					if strings.HasPrefix(nextStep,"ct") {//===========================================catalog ctN
 						fmt.Println("nextStep[2:]",nextStep[2:])
-						if nextStep[2:] == "00" {// Листать каталог дальше
+						if nextStep[2:] == "0" {// Листать каталог дальше
 							arrStores := dbwork.SelectStores()
 							mapStatusUsers[update.UserId].NewAnswerStore(arrStores)
 							//mapStatusUsers[update.UserId].Continue()
@@ -129,10 +125,10 @@ func InitChatBot() {
 							//answer
 							res1 , _ := bot.SendMessage(update.UserId,ConstructAnswerStore(arrStores))
 							fmt.Println("[res]",res1.MessageID)
-						} else if nextStep[2:] == "0" {//Главное меню
-							mapStatusUsers[update.UserId].Continue()
-							res , _ := bot.SendMessage(update.UserId,HelloMain)
-							fmt.Println("[res]",res.MessageID)
+						} else if nextStep[2:] == "00" {//Главное меню
+							//mapStatusUsers[update.UserId].Continue()
+							//res , _ := bot.SendMessage(update.UserId,HelloMain)
+							//fmt.Println("[res]",res.MessageID)
 
 						} else{//Загрузить выбраный Store
 							Store ,_ := strconv.Atoi(nextStep[2:])
@@ -144,20 +140,6 @@ func InitChatBot() {
 						SendStep(bot,update,mapStatusUsers[update.UserId].LastStore,mapStatusUsers[update.UserId].LastStep)
 
 					} else if nextStep == "faq"{//=========================================================continue
-						//var Attach vkchatbot.Attachment
-						//Attach.OwnerId = 164670950
-						//Attach.MediaId = 45
-						//Attach.TypeDoc = "wall"
-						//ans := dbwork.Answer{"ct00","Дальше"}
-						//answerStepStart := new(dbwork.Step)
-						//answerStepStart.Answers = []
-						//mapStatusUsers[update.UserId].NewAnswerStep(Step.Answers)
-						//
-						//res0 , _ := bot.SendDoc(update.UserId,Attach,"")
-						//fmt.Println("[res]",res0.MessageID)
-						//
-						//res , _ := bot.SendMessage(update.UserId,ConstructAnswer(Step))
-						//fmt.Println("[res]",res.MessageID)
 						SendStep(bot,update,999,"1")
 
 					} else if nextStep == "end"{//================================================================== end
