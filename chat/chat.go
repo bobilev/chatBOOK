@@ -33,7 +33,7 @@ func (su *StatusUser) Clear() {
 }
 func (su *StatusUser) Continue() {
 	if su.LastStore != 0 {
-		su.Answer["1"]  = "continue"
+		su.Answer["9"]  = "continue"
 	}
 }
 func (su *StatusUser) SetStore(newStore int) {
@@ -101,13 +101,8 @@ func InitChatBot() {
 			//Проверка на нахождения user в локальной базе
 			if _,ok := mapStatusUsers[update.UserId]; ok {
 				fmt.Println("Есть в базе")
-				continueStore := ""
 
-				us := mapStatusUsers[update.UserId].LastStore
-				if us != 0 && us != 999 {
-					continueStore = "1 - продолжить ("+mapStatusUsers[update.UserId].LastStoreName+")\n"
-				}
-				HelloMain := "Меню \n"+continueStore+"0 - меню\n00 - каталог"
+				//HelloMain := "Меню \n"+continueStore+"0 - меню\n00 - каталог"
 
 				if nextStep,ok := mapStatusUsers[update.UserId].Answer[update.Body]; ok {
 					//Определение Step от store или catalog
@@ -125,11 +120,16 @@ func InitChatBot() {
 							//answer
 							res1 , _ := bot.SendMessage(update.UserId,ConstructAnswerStore(arrStores))
 							fmt.Println("[res]",res1.MessageID)
-						} else if nextStep[2:] == "00" {//Главное меню
-							//mapStatusUsers[update.UserId].Continue()
-							//res , _ := bot.SendMessage(update.UserId,HelloMain)
-							//fmt.Println("[res]",res.MessageID)
+							//continue
+							continueStore := ""
 
+							us := mapStatusUsers[update.UserId].LastStore
+							if us != 0 && us != 999 {
+								mapStatusUsers[update.UserId].Continue()
+								continueStore = "9 - Продолжить ("+mapStatusUsers[update.UserId].LastStoreName+")\n"
+								res2 , _ := bot.SendMessage(update.UserId,continueStore)
+								fmt.Println("[res]",res2.MessageID)
+							}
 						} else{//Загрузить выбраный Store
 							Store ,_ := strconv.Atoi(nextStep[2:])
 							mapStatusUsers[update.UserId].LastStoreName = dbwork.SelectStoreName(Store)
@@ -162,8 +162,9 @@ func InitChatBot() {
 					}
 				}else {
 					//Answer нет такого
-					res , _ := bot.SendMessage(update.UserId,HelloMain)
-					fmt.Println("[res]",res.MessageID)
+					//answer
+					res1 , _ := bot.SendMessage(update.UserId,"Нет такой команды, чтобы вернутся в каталог отправьте 0")
+					fmt.Println("[res]",res1.MessageID)
 				}
 			} else {
 				fmt.Println("Нету в базе")
