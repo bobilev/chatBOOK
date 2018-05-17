@@ -8,19 +8,28 @@ import (
 	"strings"
 	"os"
 	"log"
+	"github.com/bobilev/chatBOOK/util"
 )
 type StatusUser struct {
 	Id int
 	LastStore int
 	LastStoreName string
 	LastStep string
+	KeyboardLayout string
 	Answer map[string]string
 }
 func (su *StatusUser) Defalt() {
 	su.Answer = make(map[string]string)
+	//switch su.KeyboardLayout {
+	//case "num" :
+	//	su.Answer["0"]  = "ct0"
+	//case "!рус":
+	//	su.Answer[util.RKL(0)]  = "ct0"
+	//}
 	su.Answer["0"]  = "ct0"
 }
 func (su *StatusUser) Start() {
+	su.KeyboardLayout = "num"
 	su.Answer = make(map[string]string)
 	su.Answer["1"]  = "faq"
 	su.Answer["2"]  = "ct0"
@@ -29,10 +38,22 @@ func (su *StatusUser) Clear() {
 	for k := range su.Answer {
 		delete(su.Answer,k)
 	}
+	//switch su.KeyboardLayout {
+	//case "num" :
+	//	su.Answer["0"]  = "ct0"
+	//case "!рус":
+	//	su.Answer[util.RKL(0)]  = "ct0"
+	//}
 	su.Answer["0"]  = "ct0"
 }
 func (su *StatusUser) Continue() {
 	if su.LastStore != 0 {
+		//switch su.KeyboardLayout {
+		//case "num" :
+		//	su.Answer["9"]  = "continue"
+		//case "!рус":
+		//	su.Answer[util.RKL(9)]  = "continue"
+		//}
 		su.Answer["9"]  = "continue"
 	}
 }
@@ -51,15 +72,35 @@ func (su *StatusUser) DoneStore() {
 	su.SetStep("0")
 	dbwork.UpdateUserStep(su.Id,0,"0")
 }
+func (su *StatusUser) GetKeyboardLayout() {
+	res := dbwork.SelectGetKeyboardLayout(su.Id)
+	su.KeyboardLayout = res
+}
+func (su *StatusUser) SetKeyboardLayout(NewLayout string) {
+	su.KeyboardLayout = NewLayout
+	dbwork.UpdateSetKeyboardLayout(su.Id,NewLayout)
+}
 func (su *StatusUser) NewAnswerStep(answers []dbwork.Answer) {
 	su.Clear()
 	for key,val := range answers {
+		//switch su.KeyboardLayout {
+		//case "num" :
+		//	su.Answer[strconv.Itoa(key+1)] = val.NextStep
+		//case "!рус":
+		//	su.Answer[util.RKL(key+1)] = val.NextStep
+		//}
 		su.Answer[strconv.Itoa(key+1)] = val.NextStep
 	}
 }
 func (su *StatusUser) NewAnswerStore(answers []dbwork.Store) {
 	su.Clear()
 	for key,val := range answers {
+		//switch su.KeyboardLayout {
+		//case "num" :
+		//	su.Answer[strconv.Itoa(key+1)] = "ct"+strconv.Itoa(val.Storeid)
+		//case "!рус":
+		//	su.Answer[util.RKL(key+1)] = "ct"+strconv.Itoa(val.Storeid)
+		//}
 		su.Answer[strconv.Itoa(key+1)] = "ct"+strconv.Itoa(val.Storeid)
 	}
 }
@@ -78,6 +119,7 @@ func InitStatusUsers() map[int]*StatusUser{
 		st.Id = id
 		st.LastStore = user.LastStore
 		st.LastStep = user.LastStep
+		st.KeyboardLayout = user.KeyboardLayout
 
 		st.Defalt()
 		st.RecoveryAnswer()
@@ -100,11 +142,18 @@ func InitChatBot() {
 		if update.Body != "" {
 			//Проверка на нахождения user в локальной базе
 			if _,ok := mapStatusUsers[update.UserId]; ok {
-				fmt.Println("Есть в базе")
+				fmt.Println("Есть в базе:",mapStatusUsers[update.UserId])
 
 				//HelloMain := "Меню \n"+continueStore+"0 - меню\n00 - каталог"
-
-				if nextStep,ok := mapStatusUsers[update.UserId].Answer[update.Body]; ok {
+				sendText := strings.ToLower(update.Body)
+				var okDeRKL bool
+				if mapStatusUsers[update.UserId].KeyboardLayout == "рус" {
+					sendText , okDeRKL = util.DeRKL(sendText)
+					if !okDeRKL {
+						sendText = ""
+					}
+				}
+				if nextStep,ok := mapStatusUsers[update.UserId].Answer[sendText]; ok {
 					//Определение Step от store или catalog
 					if strings.HasPrefix(nextStep,"ct") {//===========================================catalog ctN
 						fmt.Println("nextStep[2:]",nextStep[2:])
@@ -118,7 +167,7 @@ func InitChatBot() {
 							res0 , _ := bot.SendDocs(update.UserId,SendCategory(arrStores),"")
 							fmt.Println("[res]",res0.MessageID)
 							//answer
-							res1 , _ := bot.SendMessage(update.UserId,ConstructAnswerStore(arrStores))
+							res1 , _ := bot.SendMessage(update.UserId,ConstructAnswerStore(mapStatusUsers[update.UserId].KeyboardLayout,arrStores))
 							fmt.Println("[res]",res1.MessageID)
 							//continue
 							continueStore := ""
@@ -126,7 +175,14 @@ func InitChatBot() {
 							us := mapStatusUsers[update.UserId].LastStore
 							if us != 0 && us != 999 {
 								mapStatusUsers[update.UserId].Continue()
-								continueStore = "9 - Продолжить ("+mapStatusUsers[update.UserId].LastStoreName+")\n"
+								kbl := ""
+								switch mapStatusUsers[update.UserId].KeyboardLayout {
+								case "num" :
+									kbl = "9"
+								case "рус":
+									kbl = "п"
+								}
+								continueStore = kbl+" - Продолжить ("+mapStatusUsers[update.UserId].LastStoreName+")\n"
 								res2 , _ := bot.SendMessage(update.UserId,continueStore)
 								fmt.Println("[res]",res2.MessageID)
 							}
@@ -153,17 +209,37 @@ func InitChatBot() {
 						res0 , _ := bot.SendDocs(update.UserId,SendCategory(arrStores),"")
 						fmt.Println("[res]",res0.MessageID)
 						//answer
-						res1 , _ := bot.SendMessage(update.UserId,ConstructAnswerStore(arrStores))
+						res1 , _ := bot.SendMessage(update.UserId,ConstructAnswerStore(mapStatusUsers[update.UserId].KeyboardLayout,arrStores))
 						fmt.Println("[res]",res1.MessageID)
 
 					} else {//===================================================================================store N
 						SendStep(bot,update,mapStatusUsers[update.UserId].LastStore,nextStep)
 
 					}
-				}else {
-					//Answer нет такого
+				} else if strings.HasPrefix(sendText,"!"){
+					if sendText == "!num" {
+						mapStatusUsers[update.UserId].SetKeyboardLayout("num")
+
+						res1 , _ := bot.SendMessage(update.UserId,"Раскладка клавиатуры изменена на: num")
+						fmt.Println("[res]",res1.MessageID)
+					}
+					if sendText == "!рус" {
+						mapStatusUsers[update.UserId].SetKeyboardLayout("рус")
+
+						res1 , _ := bot.SendMessage(update.UserId,"Раскладка клавиатуры изменена на: рус")
+						fmt.Println("[res]",res1.MessageID)
+					}
+				} else {//Answer нет такого
 					//answer
-					res1 , _ := bot.SendMessage(update.UserId,"Нет такой команды, чтобы вернутся в каталог отправьте 0")
+					var help string
+					fmt.Println("mapStatusUsers[update.Id].KeyboardLayout",mapStatusUsers[update.UserId].KeyboardLayout)
+					switch mapStatusUsers[update.UserId].KeyboardLayout {
+					case "num":
+						help = "0"
+					case "рус":
+						help = "к"
+					}
+					res1 , _ := bot.SendMessage(update.UserId,"Нет такой команды, чтобы вернутся в каталог отправьте: "+help)
 					fmt.Println("[res]",res1.MessageID)
 				}
 			} else {
@@ -207,11 +283,10 @@ func SendStep(bot *vkchatbot.BotVkApiGroup,update vkchatbot.ObjectUpdate,LastSto
 		fmt.Println("[res]",res.MessageID)
 	}
 
-	res , _ := bot.SendMessage(update.UserId,ConstructAnswer(Step))
+	res , _ := bot.SendMessage(update.UserId,ConstructAnswer(mapStatusUsers[update.UserId].KeyboardLayout,Step))
 	fmt.Println("[res]",res.MessageID)
 }
 func SendCategory(arrStores []dbwork.Store) []vkchatbot.Attachment {
-
 	var arrAttach []vkchatbot.Attachment
 
 	for _,store := range arrStores {
@@ -222,20 +297,29 @@ func SendCategory(arrStores []dbwork.Store) []vkchatbot.Attachment {
 		arrAttach = append(arrAttach,Attach)
 	}
 	return arrAttach
-
 }
-func ConstructAnswer(Step dbwork.Step) string{
+func ConstructAnswer(KeyboardLayout string,Step dbwork.Step) string{
 	var answer string
 	for k,v := range Step.Answers {
-		answer += strconv.Itoa(k+1)+" - "+v.Text+"\n"
+		switch KeyboardLayout {
+		case "num" :
+			answer += strconv.Itoa(k+1)+" - "+v.Text+"\n"
+		case "рус":
+			answer += util.RKL(k+1)+" - "+v.Text+"\n"
+		}
 	}
 	//answer += "____________.__________\n0 - меню | 00 - каталог"
 	return answer
 }
-func ConstructAnswerStore(Store []dbwork.Store) string{
+func ConstructAnswerStore(KeyboardLayout string,Store []dbwork.Store) string{
 	var answer string
 	for k,v := range Store {
-		answer += strconv.Itoa(k+1)+" - "+v.Text+"\n"
+		switch KeyboardLayout {
+		case "num" :
+			answer += strconv.Itoa(k+1)+" - "+v.Text+"\n"
+		case "рус":
+			answer += util.RKL(k+1)+" - "+v.Text+"\n"
+		}
 	}
 	//answer += "____.____\n0 - меню"
 	return answer

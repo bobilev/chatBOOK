@@ -19,18 +19,21 @@ func SelectAllUsers() map[int]StateUser{
 		var userid,laststore int
 		var laststep string
 		var stateuserid StateUser
+		var keyboardlayout string
 
-		err = res.Scan(&userid,&laststore,&laststep)
+		err = res.Scan(&userid,&laststore,&laststep,&keyboardlayout)
 		checkErr(err)
 
 		stateuserid.LastStore = laststore
 		stateuserid.LastStep = laststep
+		stateuserid.KeyboardLayout = keyboardlayout
 
 		mapList[userid] = stateuserid
 
-		fmt.Println("userid -",userid)
-		fmt.Println("laststep -",laststep)
-		fmt.Println("laststore -",laststore)
+		fmt.Println("userid         -",userid)
+		fmt.Println("laststep       -",laststep)
+		fmt.Println("laststore      -",laststore)
+		fmt.Println("keyboardlayout -",keyboardlayout)
 	}
 	return mapList
 }
@@ -88,6 +91,19 @@ func SelectStep(storeid int,stepid string) Step{
 	fmt.Println("-[step]",step)
 	return step
 }
+func SelectGetKeyboardLayout(userid int) string{
+	db := dbConnect()
+	defer db.Close()
+
+	var KeyboardLayout string
+	// SELECT
+	err := db.QueryRow("SELECT keyboardlayout FROM users WHERE userid=$1",userid,).Scan(&KeyboardLayout)
+	checkErr(err)
+
+	log.Println("{SELECT | KeyboardLayout}",KeyboardLayout)
+	return KeyboardLayout
+}
+
 func InsertNewUser(userid int, laststore int, laststep string) int{
 	db := dbConnect()
 	defer db.Close()
@@ -115,6 +131,24 @@ func UpdateUserStep(userid int,laststore int,laststep string) {
 	checkErr(err)
 	if affect == 0 {
 		fmt.Println("[ErrDB: UPDATE] UpdateUserStep")
+	}
+	fmt.Println(affect)
+}
+func UpdateSetKeyboardLayout(userid int,NewLayout string) {
+	db := dbConnect()
+	defer db.Close()
+
+	// update
+	stmt, err := db.Prepare("UPDATE users SET keyboardlayout=$2 WHERE userid=$1")
+	checkErr(err)
+
+	res, err := stmt.Exec(userid, NewLayout)
+	checkErr(err)
+
+	affect, err := res.RowsAffected()//Сколько записей удалось обновить
+	checkErr(err)
+	if affect == 0 {
+		fmt.Println("[ErrDB: UPDATE] UpdateSetKeyboardLayout")
 	}
 	fmt.Println(affect)
 }

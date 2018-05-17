@@ -3,6 +3,7 @@ package dbwork
 type StateUser struct {
 	LastStore int
 	LastStep string
+	KeyboardLayout string
 }
 type Store struct {
 	Storeid int
