@@ -20,12 +20,6 @@ type StatusUser struct {
 }
 func (su *StatusUser) Defalt() {
 	su.Answer = make(map[string]string)
-	//switch su.KeyboardLayout {
-	//case "num" :
-	//	su.Answer["0"]  = "ct0"
-	//case "!рус":
-	//	su.Answer[util.RKL(0)]  = "ct0"
-	//}
 	su.Answer["0"]  = "ct0"
 }
 func (su *StatusUser) Start() {
@@ -38,22 +32,10 @@ func (su *StatusUser) Clear() {
 	for k := range su.Answer {
 		delete(su.Answer,k)
 	}
-	//switch su.KeyboardLayout {
-	//case "num" :
-	//	su.Answer["0"]  = "ct0"
-	//case "!рус":
-	//	su.Answer[util.RKL(0)]  = "ct0"
-	//}
 	su.Answer["0"]  = "ct0"
 }
 func (su *StatusUser) Continue() {
 	if su.LastStore != 0 {
-		//switch su.KeyboardLayout {
-		//case "num" :
-		//	su.Answer["9"]  = "continue"
-		//case "!рус":
-		//	su.Answer[util.RKL(9)]  = "continue"
-		//}
 		su.Answer["9"]  = "continue"
 	}
 }
@@ -83,24 +65,12 @@ func (su *StatusUser) SetKeyboardLayout(NewLayout string) {
 func (su *StatusUser) NewAnswerStep(answers []dbwork.Answer) {
 	su.Clear()
 	for key,val := range answers {
-		//switch su.KeyboardLayout {
-		//case "num" :
-		//	su.Answer[strconv.Itoa(key+1)] = val.NextStep
-		//case "!рус":
-		//	su.Answer[util.RKL(key+1)] = val.NextStep
-		//}
 		su.Answer[strconv.Itoa(key+1)] = val.NextStep
 	}
 }
 func (su *StatusUser) NewAnswerStore(answers []dbwork.Store) {
 	su.Clear()
 	for key,val := range answers {
-		//switch su.KeyboardLayout {
-		//case "num" :
-		//	su.Answer[strconv.Itoa(key+1)] = "ct"+strconv.Itoa(val.Storeid)
-		//case "!рус":
-		//	su.Answer[util.RKL(key+1)] = "ct"+strconv.Itoa(val.Storeid)
-		//}
 		su.Answer[strconv.Itoa(key+1)] = "ct"+strconv.Itoa(val.Storeid)
 	}
 }
@@ -144,7 +114,6 @@ func InitChatBot() {
 			if _,ok := mapStatusUsers[update.UserId]; ok {
 				fmt.Println("Есть в базе:",mapStatusUsers[update.UserId])
 
-				//HelloMain := "Меню \n"+continueStore+"0 - меню\n00 - каталог"
 				sendText := strings.ToLower(update.Body)
 				var okDeRKL bool
 				if mapStatusUsers[update.UserId].KeyboardLayout == "рус" {
@@ -214,7 +183,6 @@ func InitChatBot() {
 
 					} else {//===================================================================================store N
 						SendStep(bot,update,mapStatusUsers[update.UserId].LastStore,nextStep)
-
 					}
 				} else if strings.HasPrefix(sendText,"!"){
 					if sendText == "!num" {
@@ -222,12 +190,14 @@ func InitChatBot() {
 
 						res1 , _ := bot.SendMessage(update.UserId,"Раскладка клавиатуры изменена на: num")
 						fmt.Println("[res]",res1.MessageID)
+						SendStep(bot,update,mapStatusUsers[update.UserId].LastStore,mapStatusUsers[update.UserId].LastStep)
 					}
 					if sendText == "!рус" {
 						mapStatusUsers[update.UserId].SetKeyboardLayout("рус")
 
 						res1 , _ := bot.SendMessage(update.UserId,"Раскладка клавиатуры изменена на: рус")
 						fmt.Println("[res]",res1.MessageID)
+						SendStep(bot,update,mapStatusUsers[update.UserId].LastStore,mapStatusUsers[update.UserId].LastStep)
 					}
 				} else {//Answer нет такого
 					//answer
@@ -264,7 +234,6 @@ func SendStep(bot *vkchatbot.BotVkApiGroup,update vkchatbot.ObjectUpdate,LastSto
 
 	dbwork.UpdateUserStep(update.UserId,LastStore,NextStep)
 
-	//fmt.Println("2[StatusUser]",mapStatusUsers[update.UserId])
 	var Attach vkchatbot.Attachment
 	Attach.TypeDoc = Step.TypeDoc
 	Attach.MediaId = Step.Media
@@ -303,12 +272,16 @@ func ConstructAnswer(KeyboardLayout string,Step dbwork.Step) string{
 	for k,v := range Step.Answers {
 		switch KeyboardLayout {
 		case "num" :
-			answer += strconv.Itoa(k+1)+" - "+v.Text+"\n"
+			//для FAQ
+			if Step.StoreId == 999 && Step.StepID == "2" || Step.StoreId == 999 && strings.HasPrefix(Step.StepID, "9") {
+				answer += strconv.Itoa(k)+" - "+v.Text+"\n"
+			} else {
+				answer += strconv.Itoa(k+1)+" - "+v.Text+"\n"
+			}
 		case "рус":
 			answer += util.RKL(k+1)+" - "+v.Text+"\n"
 		}
 	}
-	//answer += "____________.__________\n0 - меню | 00 - каталог"
 	return answer
 }
 func ConstructAnswerStore(KeyboardLayout string,Store []dbwork.Store) string{
@@ -321,6 +294,5 @@ func ConstructAnswerStore(KeyboardLayout string,Store []dbwork.Store) string{
 			answer += util.RKL(k+1)+" - "+v.Text+"\n"
 		}
 	}
-	//answer += "____.____\n0 - меню"
 	return answer
 }
