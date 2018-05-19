@@ -32,10 +32,12 @@ func (su *StatusUser) Clear() {
 	for k := range su.Answer {
 		delete(su.Answer,k)
 	}
-	su.Answer["0"]  = "ct0"
+	if su.LastStore != 999 {
+		su.Answer["0"]  = "ct0"
+	}
 }
 func (su *StatusUser) Continue() {
-	if su.LastStore != 0 {
+	if su.LastStore != 0 && su.LastStore != 999 {
 		su.Answer["9"]  = "continue"
 	}
 }
@@ -65,7 +67,13 @@ func (su *StatusUser) SetKeyboardLayout(NewLayout string) {
 func (su *StatusUser) NewAnswerStep(answers []dbwork.Answer) {
 	su.Clear()
 	for key,val := range answers {
-		su.Answer[strconv.Itoa(key+1)] = val.NextStep
+		if su.LastStore == 999 {
+			if su.LastStep == "2" || strings.HasPrefix(su.LastStep,"9") {
+				su.Answer[strconv.Itoa(key)] = val.NextStep
+			} else {
+				su.Answer[strconv.Itoa(key+1)] = val.NextStep
+			}
+		}
 	}
 }
 func (su *StatusUser) NewAnswerStore(answers []dbwork.Store) {
@@ -104,7 +112,7 @@ func InitChatBot() {
 	}
 
 	bot := vkchatbot.InitBot(accessToken)
-	bot.Log = 3 // 0,1,2 - уровни отображения логов
+	bot.Log = 2 // 0,1,2 - уровни отображения логов
 	updates := bot.StartLongPollServer()
 
 	mapStatusUsers = InitStatusUsers()
@@ -112,7 +120,7 @@ func InitChatBot() {
 		if update.Body != "" {
 			//Проверка на нахождения user в локальной базе
 			if _,ok := mapStatusUsers[update.UserId]; ok {
-				fmt.Println("Есть в базе:",mapStatusUsers[update.UserId])
+				fmt.Println("old [Answer]:",mapStatusUsers[update.UserId].Answer)
 
 				sendText := strings.ToLower(update.Body)
 				var okDeRKL bool
@@ -216,7 +224,7 @@ func InitChatBot() {
 				fmt.Println("Нету в базе")
 				dbwork.InsertNewUser(update.UserId,0,"0")
 				st := new(StatusUser)
-				st.Defalt()
+				//st.Defalt()
 				st.Start()
 				mapStatusUsers[update.UserId] = st
 
@@ -238,9 +246,9 @@ func SendStep(bot *vkchatbot.BotVkApiGroup,update vkchatbot.ObjectUpdate,LastSto
 	Attach.TypeDoc = Step.TypeDoc
 	Attach.MediaId = Step.Media
 	Attach.OwnerId = 165847301
-	if LastStore == 999 {//faq
-		Attach.OwnerId = 164670950
-	}
+	//if LastStore == 999 {//faq
+	//	Attach.OwnerId = 164670950
+	//}
 	Attach.AccessKey = Step.AccessKey
 
 	if Step.Media != 0 {
@@ -254,6 +262,7 @@ func SendStep(bot *vkchatbot.BotVkApiGroup,update vkchatbot.ObjectUpdate,LastSto
 
 	res , _ := bot.SendMessage(update.UserId,ConstructAnswer(mapStatusUsers[update.UserId].KeyboardLayout,Step))
 	fmt.Println("[res]",res.MessageID)
+	fmt.Println("new [Answer]:",mapStatusUsers[update.UserId].Answer)
 }
 func SendCategory(arrStores []dbwork.Store) []vkchatbot.Attachment {
 	var arrAttach []vkchatbot.Attachment
